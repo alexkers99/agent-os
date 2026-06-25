@@ -6,7 +6,7 @@
 import { randomUUID } from "crypto";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { complete } from "@/lib/hermes";
-import { getAgent, VAULT_SYSTEM_NOTE } from "@/lib/agents";
+import { getAgent, VAULT_SYSTEM_NOTE, loadIdentityContext } from "@/lib/agents";
 import { vaultToolSchemas, execVaultTool } from "@/lib/vault";
 import { addMessage } from "@/lib/store";
 
@@ -28,8 +28,12 @@ export async function POST(req: Request) {
     role: m.role,
     content: m.text ?? m.content ?? "",
   }));
+  // Identity context first, then the agent's role, then vault tooling note.
+  const systemContent = [loadIdentityContext(), agent.systemPrompt, VAULT_SYSTEM_NOTE]
+    .filter(Boolean)
+    .join("\n\n");
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: `${agent.systemPrompt}\n\n${VAULT_SYSTEM_NOTE}` },
+    { role: "system", content: systemContent },
     ...history,
   ];
 

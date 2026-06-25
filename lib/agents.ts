@@ -1,5 +1,7 @@
 // Agent team ("Paperclip mode"). Worker profiles + the Critic judge.
 // Add profiles here — each is just a role + system prompt + accent.
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import type { AgentProfile } from "./types";
 
 export const CRITIC_ID = "critic";
@@ -59,6 +61,26 @@ export const VAULT_SYSTEM_NOTE =
   "search_notes(query) to find relevant notes, read_note(file) to read one in full, and save_note(filename, content) to store a note (filenames must end in .md). " +
   "When the user asks about something they may have written down, search their notes first and ground your answer in what you find — cite the note filename. " +
   "When the user asks you to save, remember, or note something, call save_note with a clear, descriptive .md filename.";
+
+// Personal identity files, loaded from <project root>/workspace/vault and prepended to
+// every agent's system prompt. Missing files are skipped silently so agents still run
+// without them. Read per-call (tiny local files) so edits apply without a restart.
+const IDENTITY_FILES = ["user.md", "soul.md", "identity.md"];
+
+export function loadIdentityContext(): string {
+  const dir = resolve(process.cwd(), "workspace/vault");
+  const parts: string[] = [];
+  for (const name of IDENTITY_FILES) {
+    try {
+      const text = readFileSync(resolve(dir, name), "utf8").trim();
+      if (text) parts.push(text);
+    } catch {
+      // file absent or unreadable — skip
+    }
+  }
+  if (parts.length === 0) return "";
+  return `=== USER IDENTITY CONTEXT ===\n${parts.join("\n\n")}\n=== END IDENTITY CONTEXT ===`;
+}
 
 export function getAgent(id: string): AgentProfile | undefined {
   return AGENTS.find((a) => a.id === id);
