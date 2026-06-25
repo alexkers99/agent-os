@@ -26,6 +26,7 @@ export default function GraphPage() {
   const hoverRef = useRef<string | null>(null);
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const selectedRef = useRef<string | null>(null);
+  const fileIndexRef = useRef<Record<string, string>>({});
 
   const [selected, setSelected] = useState<string | null>(null);
   const [content, setContent] = useState("");
@@ -34,6 +35,25 @@ export default function GraphPage() {
   useEffect(() => {
     selectedRef.current = selected;
   }, [selected]);
+
+  // Index every vault note by basename AND full relative path, so clicking a node for a
+  // subdirectory note (e.g. daily/2026-06-25) resolves to the real file instead of 404ing
+  // against <basename>.md at the vault root.
+  useEffect(() => {
+    fetch("/api/notes")
+      .then((r) => r.json())
+      .then((d: { files?: string[] }) => {
+        const idx: Record<string, string> = {};
+        for (const f of d.files || []) {
+          const noExt = f.replace(/\.md$/i, "");
+          idx[noExt] = f;
+          const base = noExt.split("/").pop()!;
+          if (!(base in idx)) idx[base] = f; // basename → first match wins
+        }
+        fileIndexRef.current = idx;
+      })
+      .catch(() => {});
+  }, []);
 
   // Fetch graph data.
   useEffect(() => {
@@ -219,7 +239,8 @@ export default function GraphPage() {
         const nid = drag.node.id;
         setSelected(nid);
         setContent("Loading…");
-        fetch(`/api/notes?file=${encodeURIComponent(nid)}.md`)
+        const file = fileIndexRef.current[nid] || `${nid}.md`;
+        fetch(`/api/notes?file=${encodeURIComponent(file)}`)
           .then((r) => (r.ok ? r.text() : Promise.reject()))
           .then(setContent)
           .catch(() => setContent("(note not found — this is an unresolved link target)"));
@@ -276,7 +297,11 @@ export default function GraphPage() {
               {content}
             </pre>
             <div style={{ padding: 12, borderTop: "1px solid var(--border)" }}>
-              <a className="btn btn-sm" href="/memory" style={{ width: "100%" }}>
+              <a
+                className="btn btn-sm"
+                href={`/memory?file=${encodeURIComponent(fileIndexRef.current[selected] || `${selected}.md`)}`}
+                style={{ width: "100%" }}
+              >
                 Open in Memory →
               </a>
             </div>
