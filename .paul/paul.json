@@ -1,0 +1,31 @@
+{
+  "project": "agent-os",
+  "created": "2026-06-25T14:08:57.535Z",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Foundation",
+      "status": "complete"
+    },
+    {
+      "id": 2,
+      "name": "PAUL Engine",
+      "status": "in_progress"
+    },
+    {
+      "id": 3,
+      "name": "Seed Protocol",
+      "status": "pending"
+    },
+    {
+      "id": 4,
+      "name": "Railway Deploy",
+      "status": "pending"
+    },
+    {
+      "id": 5,
+      "name": "Graphify MCP",
+      "status": "pending"
+    }
+  ]
+}
