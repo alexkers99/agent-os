@@ -20,6 +20,8 @@ export function hermes(): OpenAI {
 }
 
 export const MODEL = () => process.env.HERMES_MODEL || "hermes";
+// Anthropic's API requires max_tokens; OpenAI/OpenRouter treat it as optional. Always send it.
+const MAX_TOKENS = () => Number(process.env.HERMES_MAX_TOKENS) || 4096;
 
 /** Streaming text deltas for chat. */
 export async function* chatStream(
@@ -27,7 +29,7 @@ export async function* chatStream(
   signal?: AbortSignal,
 ): AsyncGenerator<string> {
   const stream = await hermes().chat.completions.create(
-    { model: MODEL(), messages, stream: true, temperature: 0.7 },
+    { model: MODEL(), messages, stream: true, temperature: 0.7, max_tokens: MAX_TOKENS() },
     { signal },
   );
   for await (const chunk of stream) {
@@ -47,6 +49,7 @@ export async function complete(
     tools: opts?.tools,
     tool_choice: opts?.tools ? "auto" : undefined,
     temperature: opts?.temperature ?? 0.5,
+    max_tokens: MAX_TOKENS(),
   });
   return res.choices[0].message;
 }
