@@ -53,6 +53,13 @@ export const AGENTS: AgentProfile[] = [
   },
 ];
 
+// Appended to the chat system prompt so any agent knows about the notes vault + its tools.
+export const VAULT_SYSTEM_NOTE =
+  "You have access to the user's personal Obsidian notes vault through tools: " +
+  "search_notes(query) to find relevant notes, read_note(file) to read one in full, and save_note(filename, content) to store a note (filenames must end in .md). " +
+  "When the user asks about something they may have written down, search their notes first and ground your answer in what you find — cite the note filename. " +
+  "When the user asks you to save, remember, or note something, call save_note with a clear, descriptive .md filename.";
+
 export function getAgent(id: string): AgentProfile | undefined {
   return AGENTS.find((a) => a.id === id);
 }
