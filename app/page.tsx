@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 
 const MODEL = "claude-sonnet-4-6";
 
+interface TgMsg {
+  id: string;
+  ts: number;
+  text: string;
+}
 interface Overview {
   notes: number;
   projects: number;
@@ -10,15 +15,23 @@ interface Overview {
   ctx: number;
   activity: string[];
   runs: number;
+  telegram: TgMsg[];
+}
+
+function ago(ts: number): string {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h`;
 }
 
 export default function OverviewPage() {
-  const [d, setD] = useState<Overview>({ notes: 0, projects: 0, phase: "—", ctx: 0, activity: [], runs: 0 });
+  const [d, setD] = useState<Overview>({ notes: 0, projects: 0, phase: "—", ctx: 0, activity: [], runs: 0, telegram: [] });
 
   useEffect(() => {
     let alive = true;
+    const j = (p: Promise<Response>) => p.then((r) => r.json()).catch(() => ({}));
     const load = async () => {
-      const j = (p: Promise<Response>) => p.then((r) => r.json()).catch(() => ({}));
       const [notes, seed, paul, log, state] = await Promise.all([
         j(fetch("/api/notes")),
         j(fetch("/api/seed")),
@@ -28,6 +41,11 @@ export default function OverviewPage() {
       ]);
       if (!alive) return;
       const st = paul?.state || {};
+      const tg: TgMsg[] = (state?.messages || [])
+        .filter((m: { source?: string }) => m.source === "telegram")
+        .slice(-8)
+        .reverse()
+        .map((m: { id: string; ts: number; text: string }) => ({ id: m.id, ts: m.ts, text: m.text }));
       setD({
         notes: notes?.count ?? notes?.files?.length ?? 0,
         projects: seed?.projects?.length ?? 0,
@@ -35,6 +53,7 @@ export default function OverviewPage() {
         ctx: typeof st.context_pct === "number" ? st.context_pct : 0,
         activity: (log?.lines || []).slice(0, 6),
         runs: state?.runs?.length ?? 0,
+        telegram: tg,
       });
     };
     load();
@@ -103,6 +122,31 @@ export default function OverviewPage() {
               <Row label="Active runs" value={String(d.runs)} />
             </section>
           </div>
+
+          {/* Telegram bridge feed */}
+          <section className="card" style={{ padding: 18 }}>
+            <div className="panel-title" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+              <span aria-hidden>📡</span> Telegram
+              <span
+                className="dot"
+                style={{ background: d.telegram.length ? "var(--green)" : "var(--text-muted)", color: "var(--green)", marginLeft: 4 }}
+              />
+            </div>
+            {d.telegram.length === 0 ? (
+              <div className="empty" style={{ padding: 16 }}>
+                No messages yet. Once the bot is bridged, inbound Telegram messages appear here live.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {d.telegram.map((m) => (
+                  <div key={m.id} style={{ display: "flex", gap: 10, fontSize: 13, alignItems: "baseline" }}>
+                    <span className="mono" style={{ fontSize: 11, color: "var(--text-muted)", minWidth: 30 }}>{ago(m.ts)}</span>
+                    <span style={{ color: "var(--text-secondary)", wordBreak: "break-word" }}>{m.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </div>
