@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-// Hardcoded per request. Single source of truth for the gate.
-const PASSWORD = "alex102030";
+// Gate password sourced from the AGENT_PASSWORD env var (set in .env.local on the VPS).
+// No hardcoded fallback: if it's unset the gate fails closed rather than shipping a secret.
+const PASSWORD = process.env.AGENT_PASSWORD;
 const COOKIE = "agent_auth";
 
 export async function POST(req: Request) {
@@ -15,6 +16,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid request body" }, { status: 400 });
   }
 
+  if (!PASSWORD) {
+    return NextResponse.json({ error: "auth not configured: AGENT_PASSWORD is not set" }, { status: 500 });
+  }
   if (password !== PASSWORD) {
     return NextResponse.json({ error: "Wrong password" }, { status: 401 });
   }
