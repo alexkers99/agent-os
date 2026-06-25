@@ -86,7 +86,7 @@ export const vaultToolSchemas: ChatCompletionTool[] = [
     function: {
       name: "search_notes",
       description:
-        "Search the user's Obsidian notes vault by keyword. Call this when the user asks about something they might have saved, or to ground an answer in their own notes.",
+        "Search the knowledge vault for relevant notes. Call this FIRST before answering any question that might involve personal context, projects, people, or decisions. Use broad keywords.",
       parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
     },
   },
@@ -118,6 +118,22 @@ export const vaultToolSchemas: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "update_note",
+      description:
+        "Update an existing note in the vault. Use when the user corrects or adds to existing information.",
+      parameters: {
+        type: "object",
+        properties: {
+          filename: { type: "string", description: "Existing filename to update (e.g. somnia.md)" },
+          content: { type: "string", description: "New full content to replace the note with" },
+        },
+        required: ["filename", "content"],
+      },
+    },
+  },
 ];
 
 export async function execVaultTool(name: string, argsJson: string): Promise<string> {
@@ -140,6 +156,12 @@ export async function execVaultTool(name: string, argsJson: string): Promise<str
         if (typeof args.content !== "string") return "ERROR: content must be a string";
         const r = await saveNote(String(args.filename || ""), args.content);
         return `Saved ${r.file} (${r.bytes} bytes).`;
+      }
+      case "update_note": {
+        // saveNote overwrites, so update == save with replace-intent for the model.
+        if (typeof args.content !== "string") return "ERROR: content must be a string";
+        const r = await saveNote(String(args.filename || ""), args.content);
+        return `Updated ${r.file} (${r.bytes} bytes).`;
       }
       default:
         return `ERROR: unknown tool ${name}`;

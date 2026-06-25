@@ -1,7 +1,5 @@
 // Agent team ("Paperclip mode"). Worker profiles + the Critic judge.
 // Add profiles here — each is just a role + system prompt + accent.
-import { readFileSync } from "fs";
-import { resolve } from "path";
 import type { AgentProfile } from "./types";
 
 export const CRITIC_ID = "critic";
@@ -55,32 +53,24 @@ export const AGENTS: AgentProfile[] = [
   },
 ];
 
-// Appended to the chat system prompt so any agent knows about the notes vault + its tools.
-export const VAULT_SYSTEM_NOTE =
-  "You have access to the user's personal Obsidian notes vault through tools: " +
-  "search_notes(query) to find relevant notes, read_note(file) to read one in full, and save_note(filename, content) to store a note (filenames must end in .md). " +
-  "When the user asks about something they may have written down, search their notes first and ground your answer in what you find — cite the note filename. " +
-  "When the user asks you to save, remember, or note something, call save_note with a clear, descriptive .md filename.";
+// Appended to the chat system prompt: dynamic vault RAG + auto-memory behavior.
+// No static identity preload — the agent searches the vault per query instead.
+export const VAULT_SYSTEM_NOTE = `You are a personal AI assistant with access to a knowledge vault.
 
-// Personal identity files, loaded from <project root>/workspace/vault and prepended to
-// every agent's system prompt. Missing files are skipped silently so agents still run
-// without them. Read per-call (tiny local files) so edits apply without a restart.
-const IDENTITY_FILES = ["user.md", "soul.md", "identity.md"];
+VAULT BEHAVIOR:
+- When the user asks anything — ALWAYS call search_notes first with relevant keywords
+- If the search returns relevant results, use that context to answer
+- If the user shares new information, facts, decisions, or preferences — call save_note to store them
+- File naming for new notes: use lowercase-hyphenated slugs (e.g. "meeting-notes-june-25.md")
+- Never make up facts about the user — only use what is in the vault or what they tell you now
 
-export function loadIdentityContext(): string {
-  const dir = resolve(process.cwd(), "workspace/vault");
-  const parts: string[] = [];
-  for (const name of IDENTITY_FILES) {
-    try {
-      const text = readFileSync(resolve(dir, name), "utf8").trim();
-      if (text) parts.push(text);
-    } catch {
-      // file absent or unreadable — skip
-    }
-  }
-  if (parts.length === 0) return "";
-  return `=== USER IDENTITY CONTEXT ===\n${parts.join("\n\n")}\n=== END IDENTITY CONTEXT ===`;
-}
+MEMORY RULES:
+- New fact learned → save it
+- User corrects something → update the note
+- Important decision made → save it
+- Routine exchange → no need to save
+
+Keep responses direct and concise.`;
 
 export function getAgent(id: string): AgentProfile | undefined {
   return AGENTS.find((a) => a.id === id);
