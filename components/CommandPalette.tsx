@@ -24,6 +24,7 @@ export default function CommandPalette() {
       { id: "n-memory", group: "Navigation", icon: "🧠", label: "Memory", run: () => router.push("/memory") },
       { id: "n-paul", group: "Navigation", icon: "⚙️", label: "PAUL", run: () => router.push("/paul") },
       { id: "n-seed", group: "Navigation", icon: "🌱", label: "Seed", run: () => router.push("/seed") },
+      { id: "n-graph", group: "Navigation", icon: "🕸", label: "Graph View", run: () => router.push("/graph") },
       { id: "n-log", group: "Navigation", icon: "📋", label: "Log", run: () => router.push("/log") },
       { id: "n-settings", group: "Navigation", icon: "⚙️", label: "Settings", run: () => router.push("/settings") },
       { id: "a-note", group: "Actions", icon: "📝", label: "New Note", run: () => router.push("/memory?new=1") },
