@@ -5,7 +5,13 @@ const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
 
-const VAULT = path.resolve(__dirname, "../workspace/vault");
+// Vault path: VAULT_DIR env > first CLI arg > default (../workspace/vault).
+// Lets the same server run on the VPS (default) or locally against a synced clone.
+const VAULT = process.env.VAULT_DIR
+  ? path.resolve(process.env.VAULT_DIR)
+  : process.argv[2]
+    ? path.resolve(process.argv[2])
+    : path.resolve(__dirname, "../workspace/vault");
 
 function send(obj) {
   process.stdout.write(JSON.stringify(obj) + "\n");

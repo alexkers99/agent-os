@@ -4,12 +4,45 @@
 Connects Claude Desktop directly to your agent-os Obsidian vault.
 Claude can list, read, search, and write notes in every conversation.
 
-## Setup (Windows)
+Pure Node.js stdlib — no dependencies, no `npm install`. JSON-RPC 2.0 over stdio.
 
-1. Open Claude Desktop config:
-   `%APPDATA%\Claude\claude_desktop_config.json`
+The vault path is resolved in this order: `VAULT_DIR` env var → first CLI arg → default `../workspace/vault`.
 
-2. Add this configuration:
+---
+
+## Option A — Local (recommended) ✅ tested
+
+Your Obsidian vault is already synced to this PC at `C:\Users\losti\obsidian-vault` (via the
+Obsidian Git plugin). So just run the server **locally** against that clone — no SSH, no keys,
+no open ports.
+
+1. Open `%APPDATA%\Claude\claude_desktop_config.json`
+2. Add:
+
+```json
+{
+  "mcpServers": {
+    "vault": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\losti\\Agent os\\mcp-server\\vault-mcp.js",
+        "C:\\Users\\losti\\obsidian-vault"
+      ]
+    }
+  }
+}
+```
+
+3. Restart Claude Desktop → try "List my vault notes".
+
+Writes go to the local clone; Obsidian Git pushes them, and `vault-sync` on the VPS pulls them —
+so changes propagate back to agent-os within a couple of minutes.
+
+---
+
+## Option B — SSH to the VPS (advanced)
+
+Runs the server **on the VPS** so it reads the live vault directly. Requires more setup:
 
 ```json
 {
@@ -27,9 +60,18 @@ Claude can list, read, search, and write notes in every conversation.
 }
 ```
 
-3. Restart Claude Desktop.
-4. In any conversation, Claude will now have access to vault tools.
-   Try: "List my vault notes" or "Read somnia.md"
+Prerequisites (none are met yet):
+1. **A private key on this PC** at `C:\Users\losti\.ssh\vault_deploy`. There is currently **no
+   `~/.ssh` on this machine** — the existing `vault_deploy` lives on the *VPS*. Generate a PC key:
+   `ssh-keygen -t ed25519 -f $HOME\.ssh\vault_deploy -N '""'`.
+2. **That key's `.pub` added to the VPS** `~/.ssh/authorized_keys` for `u4s` (the VPS's own
+   `vault_deploy` is a GitHub deploy key — different authorization).
+3. **Port 22 reachable** from this PC to `187.124.56.127`. Verify:
+   `ssh -i $HOME\.ssh\vault_deploy u4s@187.124.56.127 "node -v"`.
+
+Use Option A unless you specifically need the server to run on the VPS.
+
+---
 
 ## Tools
 
@@ -39,9 +81,3 @@ Claude can list, read, search, and write notes in every conversation.
 | `read_note` | `filename` | Read a note's full markdown |
 | `search_notes` | `query` | Case-insensitive keyword search → `{ filename, excerpt }[]` |
 | `write_note` | `filename`, `content` | Create or overwrite a note |
-
-## Notes
-- Transport: stdio (JSON-RPC 2.0). Claude Desktop spawns the process; here it spawns `ssh`, which runs the server on the VPS so it operates on the live synced vault.
-- The server is pure Node.js stdlib — no dependencies, no `npm install`.
-- Vault path resolves to `../workspace/vault` relative to the script.
-- For the SSH transport to work, the public key of `vault_deploy` must be in the VPS user's `~/.ssh/authorized_keys` (separate from its GitHub deploy-key role), and the VPS must accept SSH from your machine on port 22.
