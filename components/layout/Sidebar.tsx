@@ -9,7 +9,8 @@ const NAV = [
   { icon: "⚙️", label: "PAUL", href: "/paul", k: "4" },
   { icon: "🌱", label: "Seed", href: "/seed", k: "5" },
   { icon: "🕸", label: "Graph", href: "/graph", k: "6" },
-  { icon: "📋", label: "Log", href: "/log", k: "7" },
+  { icon: "📓", label: "Vault", href: "/vault", k: "7" },
+  { icon: "📋", label: "Log", href: "/log", k: "8" },
 ];
 
 export default function Sidebar() {
