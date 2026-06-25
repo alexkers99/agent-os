@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { renderMarkdown } from "@/lib/markdown";
 
 interface Msg {
   role: "user" | "assistant";
@@ -198,7 +199,11 @@ export default function ChatPage() {
             {messages.map((m, i) => (
               <div key={i} className={`bubble bubble--${m.role === "user" ? "user" : "ai"} rise`}>
                 {m.role === "assistant" && <div className="bubble-name">Assistant</div>}
-                {m.content}
+                {m.role === "assistant" ? (
+                  <div className="md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} />
+                ) : (
+                  m.content
+                )}
                 {m.role === "assistant" && streaming && m.content === "" && <span className="caret" />}
               </div>
             ))}
