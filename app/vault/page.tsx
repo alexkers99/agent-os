@@ -10,6 +10,10 @@ export default function VaultPage() {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [uploadMsg, setUploadMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const didInit = useRef(false);
 
   const loadList = useCallback(async (): Promise<string[]> => {
@@ -96,6 +100,44 @@ export default function VaultPage() {
     }
   };
 
+  const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!f) return;
+    setUploading(true);
+    setUploadPct(0);
+    setUploadMsg(null);
+
+    const fd = new FormData();
+    fd.append("file", f);
+    // XHR (not fetch) so we get real upload-progress events — no extra dependency.
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/vault/upload");
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable) setUploadPct(Math.round((ev.loaded / ev.total) * 100));
+    };
+    xhr.onload = async () => {
+      setUploading(false);
+      try {
+        const r = JSON.parse(xhr.responseText) as { success?: boolean; path?: string; error?: string; extracted?: number };
+        if (xhr.status >= 200 && xhr.status < 300 && r.success) {
+          setUploadMsg({ ok: true, text: `Uploaded → ${r.path}${r.extracted ? ` (${r.extracted} files)` : ""}` });
+          setFiles(await loadList());
+          if (r.path && r.path.toLowerCase().endsWith(".md")) open(r.path);
+        } else {
+          setUploadMsg({ ok: false, text: r.error || `Upload failed (HTTP ${xhr.status})` });
+        }
+      } catch {
+        setUploadMsg({ ok: false, text: "Upload failed (bad server response)" });
+      }
+    };
+    xhr.onerror = () => {
+      setUploading(false);
+      setUploadMsg({ ok: false, text: "Upload failed (network error)" });
+    };
+    xhr.send(fd);
+  };
+
   const shown = files.filter((f) => f.toLowerCase().includes(search.toLowerCase()));
 
   return (
@@ -103,13 +145,34 @@ export default function VaultPage() {
       {/* Left: file list */}
       <aside style={{ width: 240, flexShrink: 0, borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column", minHeight: 0 }}>
         <div style={{ padding: 12, borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <span className="panel-title">Vault</span>
-            <span className="badge badge--idle">{files.length}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="badge badge--idle">{files.length}</span>
+              <button
+                className="btn btn-ghost btn-sm"
+                title="Upload .md, .txt, .pdf, .docx, or .zip into the vault"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading ? `↑ ${uploadPct}%` : "⬆ Upload"}
+              </button>
+            </span>
           </div>
+          <input ref={fileInputRef} type="file" accept=".md,.txt,.pdf,.docx,.zip" style={{ display: "none" }} onChange={onUpload} />
           <button className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
             + New Note
           </button>
+          {uploading && (
+            <div style={{ height: 4, background: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ width: `${uploadPct}%`, height: "100%", background: "var(--accent)", transition: "width .15s ease" }} />
+            </div>
+          )}
+          {uploadMsg && (
+            <div style={{ fontSize: 11.5, lineHeight: 1.4, color: uploadMsg.ok ? "var(--success)" : "var(--error)", wordBreak: "break-word" }}>
+              {uploadMsg.text}
+            </div>
+          )}
           <input className="input" style={{ padding: "8px 10px" }} placeholder="🔍 Search…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
 
