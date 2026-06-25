@@ -29,6 +29,9 @@ export default function Topbar({
         <button className={`tab ${tab === "goal" ? "tab--active" : ""}`} onClick={() => onTab("goal")}>
           Goal Mode
         </button>
+        <a className="tab" href="/paul">
+          PAUL
+        </a>
       </nav>
 
       <div className="topbar-right">
