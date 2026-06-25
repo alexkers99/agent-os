@@ -7,3 +7,4 @@ out
 .DS_Store
 workspace/*
 !workspace/.gitkeep
+workspace/projects/
