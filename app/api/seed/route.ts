@@ -111,3 +111,20 @@ ${new Date().toISOString()}
   await fs.writeFile(path.join(dir, "project.md"), md, "utf8");
   return NextResponse.json({ ok: true, slug, path: `workspace/projects/${slug}/project.md` });
 }
+
+export async function DELETE(req: Request) {
+  const dir = projectsDir();
+  const slug = new URL(req.url).searchParams.get("slug");
+  if (!slug) return NextResponse.json({ error: "slug query param required" }, { status: 400 });
+
+  const target = path.resolve(dir, slug);
+  if (target === dir || !target.startsWith(dir + path.sep)) {
+    return NextResponse.json({ error: "invalid slug" }, { status: 400 });
+  }
+  try {
+    await fs.rm(target, { recursive: true, force: true });
+    return NextResponse.json({ ok: true, slug });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
+}

@@ -42,6 +42,13 @@ export default function SeedPage() {
     }
   };
 
+  const remove = async (slug: string) => {
+    if (!confirm(`Delete project "${slug}"? This permanently removes its files.`)) return;
+    await fetch(`/api/seed?slug=${encodeURIComponent(slug)}`, { method: "DELETE" }).catch(() => {});
+    if (viewing === slug) setViewing(null);
+    load();
+  };
+
   const create = async () => {
     if (!form.name.trim()) return;
     setBusy(true);
@@ -81,9 +88,14 @@ export default function SeedPage() {
             <div key={p.slug} className="proj-card">
               <div style={{ fontSize: 15, fontWeight: 600 }}>{p.name}</div>
               <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.slug}</div>
-              <button className="btn btn-sm" style={{ marginTop: "auto", alignSelf: "flex-start" }} onClick={() => view(p.slug)}>
-                View
-              </button>
+              <div style={{ marginTop: "auto", display: "flex", gap: 8 }}>
+                <button className="btn btn-sm" onClick={() => view(p.slug)}>
+                  View
+                </button>
+                <button className="btn btn-sm btn-ghost btn-danger" onClick={() => remove(p.slug)} aria-label={`Delete ${p.slug}`}>
+                  🗑
+                </button>
+              </div>
             </div>
           ))}
           <div className="proj-card proj-card--new" onClick={() => setCreating(true)}>
