@@ -8,3 +8,6 @@ out
 workspace/*
 !workspace/.gitkeep
 workspace/projects/
+
+# stray Obsidian vault accidentally created inside the project root
+/Agent os/
