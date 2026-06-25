@@ -3,11 +3,12 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 const NAV = [
-  { icon: "💬", label: "Chat", href: "/", k: "1" },
-  { icon: "🧠", label: "Memory", href: "/memory", k: "2" },
-  { icon: "⚙️", label: "PAUL", href: "/paul", k: "3" },
-  { icon: "🌱", label: "Seed", href: "/seed", k: "4" },
-  { icon: "📋", label: "Log", href: "/log", k: "5" },
+  { icon: "🛰️", label: "Overview", href: "/", k: "1" },
+  { icon: "💬", label: "Chat", href: "/chat", k: "2" },
+  { icon: "🧠", label: "Memory", href: "/memory", k: "3" },
+  { icon: "⚙️", label: "PAUL", href: "/paul", k: "4" },
+  { icon: "🌱", label: "Seed", href: "/seed", k: "5" },
+  { icon: "📋", label: "Log", href: "/log", k: "6" },
 ];
 
 export default function Sidebar() {

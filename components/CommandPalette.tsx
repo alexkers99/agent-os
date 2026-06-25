@@ -19,7 +19,8 @@ export default function CommandPalette() {
 
   const items: Item[] = useMemo(
     () => [
-      { id: "n-chat", group: "Navigation", icon: "💬", label: "Chat", run: () => router.push("/") },
+      { id: "n-overview", group: "Navigation", icon: "🛰️", label: "Overview", run: () => router.push("/") },
+      { id: "n-chat", group: "Navigation", icon: "💬", label: "Chat", run: () => router.push("/chat") },
       { id: "n-memory", group: "Navigation", icon: "🧠", label: "Memory", run: () => router.push("/memory") },
       { id: "n-paul", group: "Navigation", icon: "⚙️", label: "PAUL", run: () => router.push("/paul") },
       { id: "n-seed", group: "Navigation", icon: "🌱", label: "Seed", run: () => router.push("/seed") },

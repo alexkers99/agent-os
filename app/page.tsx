@@ -1,113 +1,128 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-
-interface Msg {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-}
-
-function uid() {
-  return (globalThis.crypto?.randomUUID?.() ?? String(Math.random())).slice(0, 8);
-}
+import { useEffect, useState } from "react";
 
 const MODEL = "claude-sonnet-4-6";
 
-export default function ChatPage() {
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [text, setText] = useState("");
-  const [streaming, setStreaming] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
-  const taRef = useRef<HTMLTextAreaElement>(null);
+interface Overview {
+  notes: number;
+  projects: number;
+  phase: string;
+  ctx: number;
+  activity: string[];
+  runs: number;
+}
+
+export default function OverviewPage() {
+  const [d, setD] = useState<Overview>({ notes: 0, projects: 0, phase: "—", ctx: 0, activity: [], runs: 0 });
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Auto-resize the textarea up to ~6 lines.
-  useEffect(() => {
-    const ta = taRef.current;
-    if (!ta) return;
-    ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 144) + "px";
-  }, [text]);
-
-  async function send() {
-    const t = text.trim();
-    if (!t || streaming) return;
-    const user: Msg = { id: uid(), role: "user", text: t };
-    const aId = uid();
-    const history = [...messages, user];
-    setMessages((m) => [...m, user, { id: aId, role: "assistant", text: "" }]);
-    setText("");
-    setStreaming(true);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, agentId: "operator" }),
+    let alive = true;
+    const load = async () => {
+      const j = (p: Promise<Response>) => p.then((r) => r.json()).catch(() => ({}));
+      const [notes, seed, paul, log, state] = await Promise.all([
+        j(fetch("/api/notes")),
+        j(fetch("/api/seed")),
+        j(fetch("/api/paul/status")),
+        j(fetch("/api/log")),
+        j(fetch("/api/state")),
+      ]);
+      if (!alive) return;
+      const st = paul?.state || {};
+      setD({
+        notes: notes?.count ?? notes?.files?.length ?? 0,
+        projects: seed?.projects?.length ?? 0,
+        phase: String(st.current_phase ?? "—"),
+        ctx: typeof st.context_pct === "number" ? st.context_pct : 0,
+        activity: (log?.lines || []).slice(0, 6),
+        runs: state?.runs?.length ?? 0,
       });
-      const reader = res.body!.getReader();
-      const dec = new TextDecoder();
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = dec.decode(value);
-        setMessages((m) => m.map((x) => (x.id === aId ? { ...x, text: x.text + chunk } : x)));
-      }
-    } catch (e) {
-      setMessages((m) => m.map((x) => (x.id === aId ? { ...x, text: x.text + "\n[error: " + (e as Error).message + "]" } : x)));
-    } finally {
-      setStreaming(false);
-    }
-  }
+    };
+    load();
+    const t = setInterval(load, 5000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+
+  const ctxColor = d.ctx > 85 ? "var(--red)" : d.ctx >= 70 ? "var(--yellow)" : "var(--green)";
 
   return (
     <div className="page">
       <header className="page-header">
         <span className="page-title">
-          <span aria-hidden>💬</span> Chat
+          <span aria-hidden>🛰️</span> Mission Control
         </span>
         <div className="page-header-actions">
           <span className="tag">{MODEL}</span>
         </div>
       </header>
 
-      <div className="page-body">
-        <div className="chat-stream">
-          {messages.length === 0 && (
-            <div className="empty">Start a conversation. The assistant can search and write to your notes vault.</div>
-          )}
-          {messages.map((m) => (
-            <div key={m.id} className={`bubble bubble--${m.role === "user" ? "user" : "ai"} rise`}>
-              {m.role === "assistant" && <div className="bubble-name">Assistant</div>}
-              {m.text}
-              {m.role === "assistant" && streaming && m.text === "" && <span className="caret" />}
-            </div>
-          ))}
-          <div ref={endRef} />
+      <div className="page-body" style={{ padding: 24 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 18 }}>
+          {/* Status strip */}
+          <div className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span className="dot dot--pulse" style={{ background: "var(--green)", color: "var(--green)", width: 9, height: 9 }} />
+            <span style={{ fontWeight: 600 }}>Agent OS online</span>
+            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
+              · {MODEL} · PAUL phase {d.phase}
+            </span>
+            <span className="tag" style={{ marginLeft: "auto", color: "var(--gold)", borderColor: "rgba(255,215,0,0.3)" }}>
+              HERMES
+            </span>
+          </div>
+
+          {/* Metric cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+            <Metric label="Notes" value={d.notes} />
+            <Metric label="Projects" value={d.projects} />
+            <Metric label="PAUL phase" value={d.phase} />
+            <Metric label="Context" value={`${d.ctx}%`} color={ctxColor} />
+          </div>
+
+          {/* Panels */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+            <section className="card" style={{ padding: 18 }}>
+              <div className="panel-title" style={{ marginBottom: 12 }}>Activity Feed</div>
+              {d.activity.length === 0 && <div className="empty" style={{ padding: 16 }}>No recent activity.</div>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {d.activity.map((line, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, fontSize: 13 }}>
+                    <span className="dot" style={{ background: "var(--accent)", color: "var(--accent)", marginTop: 6 }} />
+                    <span style={{ color: "var(--text-secondary)", wordBreak: "break-word" }}>{line}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="card" style={{ padding: 18 }}>
+              <div className="panel-title" style={{ marginBottom: 12 }}>Security Posture</div>
+              <Row label="Auth" value="Password gate" ok />
+              <Row label="Transport" value="HTTPS tunnel" ok />
+              <Row label="Approval mode" value="not enforced" />
+              <Row label="Active runs" value={String(d.runs)} />
+            </section>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="composer">
-        <textarea
-          ref={taRef}
-          className="input"
-          rows={1}
-          placeholder="Message…"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-        />
-        <button className="btn btn-primary" onClick={send} disabled={streaming || !text.trim()}>
-          {streaming ? "…" : "Send"}
-        </button>
-      </div>
+function Metric({ label, value, color }: { label: string; value: string | number; color?: string }) {
+  return (
+    <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16 }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>{label}</div>
+      <div className="mono" style={{ fontSize: 24, fontWeight: 600, color: color || "var(--text-primary)" }}>{value}</div>
+    </div>
+  );
+}
+
+function Row({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13 }}>
+      <span style={{ color: "var(--text-muted)" }}>{label}</span>
+      <span style={{ color: ok ? "var(--green)" : "var(--text-secondary)" }}>{value}</span>
     </div>
   );
 }

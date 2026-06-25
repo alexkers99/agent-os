@@ -1,37 +1,40 @@
 /* Agent OS — dark-first design system (purple accent). */
 
 :root {
-  /* Spec tokens */
-  --bg-base: #0a0a0a;
-  --bg-surface: #111111;
-  --bg-elevated: #1a1a1a;
-  --border: #222222;
-  --text-primary: #f0f0f0;
-  --text-muted: #666666;
-  --accent: #7c6aff;
-  --accent-dim: #7c6aff22;
-  --green: #22c55e;
-  --yellow: #eab308;
-  --red: #ef4444;
-  --blue: #3b82f6;
+  /* Hermes Teal identity — luminance-elevated teal-charcoal, no shadows */
+  --bg-base: #0E1513;
+  --bg-surface: #131C19;
+  --bg-elevated: #1E2C26;
+  --border: #243530;
+  --text-primary: #FFF8DC; /* cornsilk */
+  --text-muted: #6E7C77;
+  --accent: #4DD0E1; /* Hermes teal */
+  --accent-dim: rgba(77, 208, 225, 0.12);
+  --green: #4CAF50;
+  --yellow: #FFA726;
+  --red: #EF5350;
+  --blue: #26C6DA;
+  --gold: #FFD700; /* Hermes identity highlight */
+  --bronze: #CD7F32;
+  --amber: #FFBF00;
 
-  /* Back-compat aliases (so app/login + any legacy classes adopt the new palette) */
+  /* Back-compat aliases (so every existing class adopts the Hermes palette) */
   --bg: var(--bg-base);
   --surface: var(--bg-surface);
-  --surface-alt: #0d0d0d;
+  --surface-alt: #101714;
   --surface-hover: var(--bg-elevated);
   --text: var(--text-primary);
-  --text-secondary: #a8a8a8;
+  --text-secondary: #B8C4C0;
   --text-tertiary: var(--text-muted);
-  --accent-hover: #8d7dff;
-  --accent-ink: #ffffff;
-  --border-hover: #2e2e2e;
-  --border-strong: #3a3a3a;
+  --accent-hover: #26C6DA;
+  --accent-ink: #0E1513; /* dark text on bright teal */
+  --border-hover: #324842;
+  --border-strong: #3D5650;
   --success: var(--green);
   --warning: var(--yellow);
   --error: var(--red);
   --info: var(--blue);
-  --bg-rgb: 10, 10, 10;
+  --bg-rgb: 14, 21, 19;
 
   --radius-sm: 6px;
   --radius: 10px;
@@ -73,7 +76,7 @@ a { color: inherit; text-decoration: none; }
 .btn:active { transform: translateY(0.5px); }
 .btn:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-secondary { background: var(--bg-elevated); }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); }
@@ -193,7 +196,7 @@ a { color: inherit; text-decoration: none; }
 .step { display: flex; align-items: center; gap: 8px; }
 .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-muted); }
 .step--done .step-dot { background: var(--green); border-color: var(--green); color: #06210f; }
-.step--current .step-dot { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 0 3px var(--accent-dim); }
+.step--current .step-dot { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 3px var(--accent-dim); }
 .step-line { width: 28px; height: 1px; background: var(--border); }
 .step--done + .step .step-line, .step-line--done { background: var(--green); }
 
@@ -225,7 +228,7 @@ a { color: inherit; text-decoration: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 /* legacy login bits */
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-mark { width: 14px; height: 14px; border-radius: 4px; background: var(--accent); }
+.brand-mark { width: 14px; height: 14px; border-radius: 4px; background: var(--gold); }
 .brand-name { font-size: 14px; font-weight: 600; }
 .link { color: var(--text-muted); transition: color var(--dur) var(--ease); }
 .link:hover { color: var(--accent); }
